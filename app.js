@@ -182,7 +182,9 @@ async function analyzeFood() {
     const text = json.content?.[0]?.text;
     if (!text) throw new Error('Empty response from Claude');
 
-    const data = JSON.parse(text);
+    // Strip markdown code fences if Claude wrapped the JSON anyway
+    const cleaned = text.replace(/^```(?:json)?\s*/i, '').replace(/\s*```\s*$/, '').trim();
+    const data = JSON.parse(cleaned);
     lastResult = data;
     renderResult(data);
   } catch (err) {

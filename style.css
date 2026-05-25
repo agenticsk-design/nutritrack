@@ -134,7 +134,7 @@ textarea:focus { outline: none; border-color: var(--green); }
   border-radius: 20px; white-space: nowrap;
 }
 
-.macro-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; margin-bottom: 16px; }
+.macro-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; margin-bottom: 16px; }
 .macro-box {
   background: var(--gray-50); border-radius: 8px; padding: 12px; text-align: center;
 }
@@ -262,7 +262,7 @@ textarea:focus { outline: none; border-color: var(--green); }
 .error-msg { background: #fee2e2; color: #991b1b; padding: 10px 14px; border-radius: 8px; font-size: .875rem; margin-top: 12px; display: none; }
 
 @media (max-width: 520px) {
-  .macro-grid { grid-template-columns: 1fr 1fr; }
+  .macro-grid { grid-template-columns: repeat(2, 1fr); }
   .detail-grid { grid-template-columns: 1fr; }
   .totals-bar { grid-template-columns: repeat(2, 1fr); }
 }

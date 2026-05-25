@@ -206,6 +206,7 @@ function renderResult(d) {
   document.getElementById('r-carbs').textContent = d.carbohydrates?.total ?? '—';
   document.getElementById('r-protein').textContent = d.protein ?? '—';
   document.getElementById('r-fat').textContent = d.fat?.total ?? '—';
+  document.getElementById('r-fiber-macro').textContent = d.carbohydrates?.fiber ?? '—';
   document.getElementById('r-sugar').textContent = g(d.carbohydrates?.sugar);
   document.getElementById('r-fiber').textContent = g(d.carbohydrates?.fiber);
   document.getElementById('r-sat').textContent = g(d.fat?.saturated);

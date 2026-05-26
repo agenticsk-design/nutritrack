@@ -1,5 +1,5 @@
 /* NutriTrack Service Worker */
-const CACHE = 'nutritrack-v1';
+const CACHE = 'nutritrack-v3';
 const STATIC = ['/', '/index.html', '/style.css', '/app.js', '/manifest.json'];
 
 self.addEventListener('install', e => {

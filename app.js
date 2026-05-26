@@ -137,13 +137,14 @@ async function updateApiStatus() {
 }
 
 // ── Auth ───────────────────────────────────────────────────────────────────
-function showAuthModal() {
-  document.getElementById('auth-modal-overlay').classList.add('open');
-  document.getElementById('api-modal-overlay').classList.remove('open');
+function showAuthScreen() {
+  document.getElementById('auth-screen').style.display = 'flex';
+  document.getElementById('app').style.display = 'none';
 }
 
-function hideAuthModal() {
-  document.getElementById('auth-modal-overlay').classList.remove('open');
+function showApp() {
+  document.getElementById('auth-screen').style.display = 'none';
+  document.getElementById('app').style.display = 'block';
 }
 
 function setAuthError(msg) {
@@ -154,22 +155,18 @@ function setAuthError(msg) {
 
 async function onSignedIn(user) {
   currentUser = user;
-  hideAuthModal();
+  showApp();
 
-  // Show user pill
-  const pill = document.getElementById('user-pill');
   document.getElementById('user-email').textContent = user.email;
-  pill.style.display = 'flex';
+  document.getElementById('user-pill').style.display = 'flex';
 
   await updateApiStatus();
 
-  // Check if API key is set
   const key = await getApiKey();
   if (!key) {
     document.getElementById('api-modal-overlay').classList.add('open');
   }
 
-  // Load today's log
   entriesCache = {};
   viewDate = todayKey();
   await renderLog();
@@ -185,7 +182,7 @@ function onSignedOut() {
   document.getElementById('result-card').style.display = 'none';
   document.getElementById('api-dot').classList.remove('connected');
   document.getElementById('api-status').textContent = 'No API key';
-  showAuthModal();
+  showAuthScreen();
 }
 
 function initAuth() {
@@ -229,7 +226,6 @@ function initAuth() {
     const { error } = await supabase.auth.signUp({ email, password });
     btn.disabled = false; btn.textContent = 'Create Account';
     if (error) { setAuthError(error.message); return; }
-    setAuthError('');
     showToast('Account created! Check your email to confirm, then sign in.');
   });
 
@@ -313,7 +309,7 @@ function initImageUpload() {
 
 // ── Analyze ────────────────────────────────────────────────────────────────
 async function analyzeFood() {
-  if (!currentUser) { showAuthModal(); return; }
+  if (!currentUser) { showAuthScreen(); return; }
 
   const apiKey = await getApiKey();
   if (!apiKey) {
@@ -407,7 +403,7 @@ function renderResult(d) {
 function initAddToLog() {
   document.getElementById('btn-add-log').addEventListener('click', async () => {
     if (!lastResult) return;
-    if (!currentUser) { showAuthModal(); return; }
+    if (!currentUser) { showAuthScreen(); return; }
 
     const entry = {
       id: Date.now().toString(),
@@ -552,13 +548,8 @@ async function init() {
   initAddToLog();
   initDateNav();
 
-  // Check for existing session (persists across refreshes)
-  const { data: { session } } = await supabase.auth.getSession();
-  if (!session) {
-    // No session — show auth modal (already open by default)
-    renderLog(); // renders empty state
-  }
-  // If session exists, onAuthStateChange will fire and call onSignedIn
+  // onAuthStateChange fires on load with existing session (persists across refreshes)
+  // If no session, auth screen is already visible (app div is hidden by default)
 
   document.getElementById('btn-analyze').addEventListener('click', analyzeFood);
 

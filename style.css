@@ -290,25 +290,56 @@ textarea:focus { outline: none; border-color: var(--green); }
 .modal .btn-primary:hover { background: var(--green-dark); }
 .modal .btn-primary:disabled { opacity: .6; cursor: not-allowed; }
 
-/* Auth modal extras */
-.modal-logo {
-  font-size: 1.3rem; font-weight: 700; text-align: center;
-  margin-bottom: 20px; color: var(--green-dark);
+/* ── Auth Screen ─────────────────────────────────────────────────────────── */
+#auth-screen {
+  display: flex; min-height: 100vh;
+  align-items: center; justify-content: center;
+  background: linear-gradient(135deg, #f0fdf4 0%, #dcfce7 50%, #bbf7d0 100%);
+  padding: 24px 16px;
+}
+.auth-screen-inner {
+  width: 100%; max-width: 400px;
+}
+.auth-brand {
+  text-align: center; margin-bottom: 32px;
+}
+.auth-brand-icon {
+  font-size: 3.5rem; margin-bottom: 8px; display: block;
+}
+.auth-brand-name {
+  font-size: 2rem; font-weight: 800; color: var(--green-dark);
+  margin: 0 0 4px;
+}
+.auth-brand-tagline {
+  font-size: .9rem; color: var(--gray-600); margin: 0;
+}
+.auth-card {
+  background: #fff; border-radius: 16px;
+  box-shadow: var(--shadow-lg); padding: 28px;
 }
 .auth-tabs {
-  display: flex; gap: 0; margin-bottom: 20px;
+  display: flex; gap: 0; margin-bottom: 24px;
   border: 1.5px solid var(--gray-200); border-radius: 8px; overflow: hidden;
 }
 .auth-tab-btn {
-  flex: 1; padding: 9px; border: none; background: #fff;
+  flex: 1; padding: 10px; border: none; background: #fff;
   font: inherit; font-size: .9rem; font-weight: 500; cursor: pointer;
   color: var(--gray-600); transition: all .15s;
 }
 .auth-tab-btn.active { background: var(--green); color: #fff; font-weight: 600; }
 .auth-tab-panel { display: none; }
 .auth-tab-panel.active { display: block; }
+.auth-tab-panel input {
+  width: 100%; padding: 11px 13px; border: 1.5px solid var(--gray-200);
+  border-radius: 8px; font: inherit; font-size: .95rem;
+  margin-bottom: 12px; display: block; transition: border-color .15s;
+}
+.auth-tab-panel input:focus { outline: none; border-color: var(--green); }
+.auth-tab-panel .btn-primary {
+  margin-top: 4px;
+}
 .auth-error {
-  display: none; margin-top: 12px;
+  display: none; margin-top: 14px;
   background: #fee2e2; color: #991b1b;
   padding: 9px 12px; border-radius: 8px; font-size: .85rem;
 }

@@ -21,188 +21,199 @@
 </head>
 <body>
 
-<header>
-  <div class="logo">
-    <span class="logo-icon">🥗</span>
-    <span>NutriTrack</span>
-  </div>
-  <div class="header-right">
-    <div class="status-dot">
-      <div class="dot" id="api-dot"></div>
-      <span id="api-status">No API key</span>
-    </div>
-    <div class="user-pill" id="user-pill">
-      <span class="user-email" id="user-email"></span>
-      <button class="btn-signout" id="btn-signout">Sign out</button>
-    </div>
-  </div>
-</header>
-
-<main>
-  <!-- Analyze Card -->
-  <div class="card">
-    <div class="card-title">🔍 Analyze Food</div>
-
-    <div class="input-tabs">
-      <button class="tab-btn active" data-tab="text">✏️ Describe</button>
-      <button class="tab-btn" data-tab="image">📷 Upload Photo</button>
+<!-- ── Auth Screen ─────────────────────────────────────────────────────── -->
+<div id="auth-screen">
+  <div class="auth-screen-inner">
+    <div class="auth-brand">
+      <div class="auth-brand-icon">🥗</div>
+      <h1 class="auth-brand-name">NutriTrack</h1>
+      <p class="auth-brand-tagline">AI-powered nutrition tracking</p>
     </div>
 
-    <div class="tab-panel active" id="tab-text">
-      <textarea id="food-input" placeholder="e.g. &quot;A bowl of overnight oats with almond milk, banana slices, and a tablespoon of honey&quot;"></textarea>
-    </div>
-
-    <div class="tab-panel" id="tab-image">
-      <div class="drop-zone" id="drop-zone">
-        <input type="file" id="file-input" accept="image/*" />
-        <div class="icon">📸</div>
-        <p>Drag & drop a photo or <strong>click to browse</strong></p>
-        <p style="font-size:.75rem;margin-top:4px;color:#9ca3af">JPG, PNG, WEBP · max 5 MB</p>
+    <div class="auth-card">
+      <div class="auth-tabs">
+        <button class="auth-tab-btn active" data-tab="signin">Sign In</button>
+        <button class="auth-tab-btn" data-tab="signup">Sign Up</button>
       </div>
-      <img id="img-preview" alt="Food preview" />
-    </div>
 
-    <div class="error-msg" id="error-msg"></div>
-
-    <button class="btn-analyze" id="btn-analyze">
-      <div class="spinner" id="spinner"></div>
-      <span id="btn-label">✨ Analyze Nutrients</span>
-    </button>
-  </div>
-
-  <!-- Result Card -->
-  <div class="card" id="result-card">
-    <div class="food-header">
-      <div>
-        <div class="food-name" id="r-name"></div>
-        <div class="food-serving" id="r-serving"></div>
+      <!-- Sign In -->
+      <div class="auth-tab-panel active" id="auth-tab-signin">
+        <input type="email" id="signin-email" placeholder="Email address" autocomplete="email" />
+        <input type="password" id="signin-password" placeholder="Password" autocomplete="current-password" />
+        <button class="btn-primary" id="btn-signin">Sign In</button>
       </div>
-      <div class="calories-badge"><span id="r-calories"></span> kcal</div>
-    </div>
 
-    <div class="macro-grid">
-      <div class="macro-box">
-        <div class="label">Carbs</div>
-        <div class="value" id="r-carbs"></div>
-        <div class="unit">grams</div>
+      <!-- Sign Up -->
+      <div class="auth-tab-panel" id="auth-tab-signup">
+        <input type="email" id="signup-email" placeholder="Email address" autocomplete="email" />
+        <input type="password" id="signup-password" placeholder="Password (min 6 characters)" autocomplete="new-password" />
+        <input type="password" id="signup-confirm" placeholder="Confirm password" autocomplete="new-password" />
+        <button class="btn-primary" id="btn-signup">Create Account</button>
       </div>
-      <div class="macro-box">
-        <div class="label">Protein</div>
-        <div class="value" id="r-protein"></div>
-        <div class="unit">grams</div>
-      </div>
-      <div class="macro-box">
-        <div class="label">Total Fat</div>
-        <div class="value" id="r-fat"></div>
-        <div class="unit">grams</div>
-      </div>
-      <div class="macro-box fiber-box">
-        <div class="label">🌾 Fiber</div>
-        <div class="value" id="r-fiber-macro"></div>
-        <div class="unit">grams</div>
-      </div>
+
+      <div id="auth-error" class="auth-error"></div>
     </div>
-
-    <div class="detail-grid">
-      <div class="detail-row"><span class="label">Sugar</span><span class="val" id="r-sugar"></span></div>
-      <div class="detail-row"><span class="label">Fiber</span><span class="val" id="r-fiber"></span></div>
-      <div class="detail-row"><span class="label">Saturated Fat</span><span class="val" id="r-sat"></span></div>
-      <div class="detail-row"><span class="label">Unsaturated Fat</span><span class="val" id="r-unsat"></span></div>
-      <div class="detail-row"><span class="label">Trans Fat</span><span class="val" id="r-trans"></span></div>
-      <div class="detail-row"><span class="label">Sodium</span><span class="val" id="r-sodium"></span></div>
-    </div>
-
-    <div class="vitamins-section" id="vitamins-section" style="display:none">
-      <div class="vitamins-title">Notable Vitamins & Minerals</div>
-      <div class="vitamins-list" id="r-vitamins"></div>
-    </div>
-
-    <div class="confidence-note" id="r-notes"></div>
-
-    <button class="btn-add-log" id="btn-add-log">+ Add to Today's Log</button>
-  </div>
-
-  <!-- Daily Log -->
-  <div class="card">
-    <div class="log-header">
-      <div class="log-date" id="log-date-label"></div>
-      <div class="date-nav">
-        <button class="date-btn" id="btn-prev">‹</button>
-        <button class="date-btn" id="btn-today" title="Go to today">●</button>
-        <button class="date-btn" id="btn-next">›</button>
-      </div>
-    </div>
-
-    <div id="log-loading" class="log-loading" style="display:none">
-      <div class="log-spinner"></div>
-    </div>
-
-    <div id="log-empty" class="empty-state">
-      <div class="icon">🌱</div>
-      <p>No food logged yet today</p>
-    </div>
-
-    <div class="log-entries" id="log-entries"></div>
-
-    <div class="totals-bar" id="totals-bar" style="display:none">
-      <div class="total-item">
-        <div class="lbl">Calories</div>
-        <div class="val" id="t-cal"></div>
-      </div>
-      <div class="total-item">
-        <div class="lbl">Carbs</div>
-        <div class="val" id="t-carbs"></div>
-      </div>
-      <div class="total-item">
-        <div class="lbl">Protein</div>
-        <div class="val" id="t-prot"></div>
-      </div>
-      <div class="total-item">
-        <div class="lbl">Fat</div>
-        <div class="val" id="t-fat"></div>
-      </div>
-    </div>
-  </div>
-</main>
-
-<!-- Auth Modal -->
-<div class="modal-overlay open" id="auth-modal-overlay">
-  <div class="modal">
-    <div class="modal-logo">🥗 NutriTrack</div>
-
-    <div class="auth-tabs">
-      <button class="auth-tab-btn active" data-tab="signin">Sign In</button>
-      <button class="auth-tab-btn" data-tab="signup">Sign Up</button>
-    </div>
-
-    <!-- Sign In -->
-    <div class="auth-tab-panel active" id="auth-tab-signin">
-      <input type="email" id="signin-email" placeholder="Email address" autocomplete="email" />
-      <input type="password" id="signin-password" placeholder="Password" autocomplete="current-password" />
-      <button class="btn-primary" id="btn-signin">Sign In</button>
-    </div>
-
-    <!-- Sign Up -->
-    <div class="auth-tab-panel" id="auth-tab-signup">
-      <input type="email" id="signup-email" placeholder="Email address" autocomplete="email" />
-      <input type="password" id="signup-password" placeholder="Password (min 6 characters)" autocomplete="new-password" />
-      <input type="password" id="signup-confirm" placeholder="Confirm password" autocomplete="new-password" />
-      <button class="btn-primary" id="btn-signup">Create Account</button>
-    </div>
-
-    <div id="auth-error" class="auth-error"></div>
   </div>
 </div>
 
-<!-- API Key Modal -->
-<div class="modal-overlay" id="api-modal-overlay">
-  <div class="modal">
-    <h2>🔑 Set Your API Key</h2>
-    <p>NutriTrack uses the Anthropic Claude API to analyze food. Your key is stored securely in your account.</p>
-    <input type="password" id="api-key-input" placeholder="sk-ant-api03-..." autocomplete="off" />
-    <button class="btn-primary" id="btn-save-key">Save & Continue</button>
+<!-- ── App ─────────────────────────────────────────────────────────────── -->
+<div id="app" style="display:none">
+
+  <header>
+    <div class="logo">
+      <span class="logo-icon">🥗</span>
+      <span>NutriTrack</span>
+    </div>
+    <div class="header-right">
+      <div class="status-dot">
+        <div class="dot" id="api-dot"></div>
+        <span id="api-status">No API key</span>
+      </div>
+      <div class="user-pill" id="user-pill">
+        <span class="user-email" id="user-email"></span>
+        <button class="btn-signout" id="btn-signout">Sign out</button>
+      </div>
+    </div>
+  </header>
+
+  <main>
+    <!-- Analyze Card -->
+    <div class="card">
+      <div class="card-title">🔍 Analyze Food</div>
+
+      <div class="input-tabs">
+        <button class="tab-btn active" data-tab="text">✏️ Describe</button>
+        <button class="tab-btn" data-tab="image">📷 Upload Photo</button>
+      </div>
+
+      <div class="tab-panel active" id="tab-text">
+        <textarea id="food-input" placeholder="e.g. &quot;A bowl of overnight oats with almond milk, banana slices, and a tablespoon of honey&quot;"></textarea>
+      </div>
+
+      <div class="tab-panel" id="tab-image">
+        <div class="drop-zone" id="drop-zone">
+          <input type="file" id="file-input" accept="image/*" />
+          <div class="icon">📸</div>
+          <p>Drag & drop a photo or <strong>click to browse</strong></p>
+          <p style="font-size:.75rem;margin-top:4px;color:#9ca3af">JPG, PNG, WEBP · max 5 MB</p>
+        </div>
+        <img id="img-preview" alt="Food preview" />
+      </div>
+
+      <div class="error-msg" id="error-msg"></div>
+
+      <button class="btn-analyze" id="btn-analyze">
+        <div class="spinner" id="spinner"></div>
+        <span id="btn-label">✨ Analyze Nutrients</span>
+      </button>
+    </div>
+
+    <!-- Result Card -->
+    <div class="card" id="result-card">
+      <div class="food-header">
+        <div>
+          <div class="food-name" id="r-name"></div>
+          <div class="food-serving" id="r-serving"></div>
+        </div>
+        <div class="calories-badge"><span id="r-calories"></span> kcal</div>
+      </div>
+
+      <div class="macro-grid">
+        <div class="macro-box">
+          <div class="label">Carbs</div>
+          <div class="value" id="r-carbs"></div>
+          <div class="unit">grams</div>
+        </div>
+        <div class="macro-box">
+          <div class="label">Protein</div>
+          <div class="value" id="r-protein"></div>
+          <div class="unit">grams</div>
+        </div>
+        <div class="macro-box">
+          <div class="label">Total Fat</div>
+          <div class="value" id="r-fat"></div>
+          <div class="unit">grams</div>
+        </div>
+        <div class="macro-box fiber-box">
+          <div class="label">🌾 Fiber</div>
+          <div class="value" id="r-fiber-macro"></div>
+          <div class="unit">grams</div>
+        </div>
+      </div>
+
+      <div class="detail-grid">
+        <div class="detail-row"><span class="label">Sugar</span><span class="val" id="r-sugar"></span></div>
+        <div class="detail-row"><span class="label">Fiber</span><span class="val" id="r-fiber"></span></div>
+        <div class="detail-row"><span class="label">Saturated Fat</span><span class="val" id="r-sat"></span></div>
+        <div class="detail-row"><span class="label">Unsaturated Fat</span><span class="val" id="r-unsat"></span></div>
+        <div class="detail-row"><span class="label">Trans Fat</span><span class="val" id="r-trans"></span></div>
+        <div class="detail-row"><span class="label">Sodium</span><span class="val" id="r-sodium"></span></div>
+      </div>
+
+      <div class="vitamins-section" id="vitamins-section" style="display:none">
+        <div class="vitamins-title">Notable Vitamins & Minerals</div>
+        <div class="vitamins-list" id="r-vitamins"></div>
+      </div>
+
+      <div class="confidence-note" id="r-notes"></div>
+
+      <button class="btn-add-log" id="btn-add-log">+ Add to Today's Log</button>
+    </div>
+
+    <!-- Daily Log -->
+    <div class="card">
+      <div class="log-header">
+        <div class="log-date" id="log-date-label"></div>
+        <div class="date-nav">
+          <button class="date-btn" id="btn-prev">‹</button>
+          <button class="date-btn" id="btn-today" title="Go to today">●</button>
+          <button class="date-btn" id="btn-next">›</button>
+        </div>
+      </div>
+
+      <div id="log-loading" class="log-loading" style="display:none">
+        <div class="log-spinner"></div>
+      </div>
+
+      <div id="log-empty" class="empty-state">
+        <div class="icon">🌱</div>
+        <p>No food logged yet today</p>
+      </div>
+
+      <div class="log-entries" id="log-entries"></div>
+
+      <div class="totals-bar" id="totals-bar" style="display:none">
+        <div class="total-item">
+          <div class="lbl">Calories</div>
+          <div class="val" id="t-cal"></div>
+        </div>
+        <div class="total-item">
+          <div class="lbl">Carbs</div>
+          <div class="val" id="t-carbs"></div>
+        </div>
+        <div class="total-item">
+          <div class="lbl">Protein</div>
+          <div class="val" id="t-prot"></div>
+        </div>
+        <div class="total-item">
+          <div class="lbl">Fat</div>
+          <div class="val" id="t-fat"></div>
+        </div>
+      </div>
+    </div>
+  </main>
+
+  <!-- API Key Modal -->
+  <div class="modal-overlay" id="api-modal-overlay">
+    <div class="modal">
+      <h2>🔑 Set Your API Key</h2>
+      <p>NutriTrack uses the Anthropic Claude API to analyze food. Your key is stored securely in your account.</p>
+      <input type="password" id="api-key-input" placeholder="sk-ant-api03-..." autocomplete="off" />
+      <button class="btn-primary" id="btn-save-key">Save & Continue</button>
+    </div>
   </div>
-</div>
+
+</div><!-- /#app -->
 
 <!-- Toast -->
 <div class="toast" id="toast"></div>

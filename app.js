@@ -1,10 +1,17 @@
-/* NutriTrack - app.js */
+/* NutriTrack - app.js (Supabase cloud storage + auth) */
+
+// ── Supabase ───────────────────────────────────────────────────────────────
+const SUPABASE_URL = 'https://zqvgsbmcxrelednrtjmk.supabase.co';
+const SUPABASE_ANON_KEY = 'sb_publishable_6JjJmkv0V_7DFP9cjMwwXQ_Mk9HPp20';
+const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
 // ── State ──────────────────────────────────────────────────────────────────
 let activeTab = 'text';
-let imageData = null;  // { base64, mediaType }
-let lastResult = null; // last nutrient analysis
-let viewDate = todayKey(); // 'YYYY-MM-DD'
+let imageData = null;
+let lastResult = null;
+let viewDate = todayKey();
+let currentUser = null;
+let entriesCache = {}; // { 'YYYY-MM-DD': [...entries] }
 
 // ── Helpers ────────────────────────────────────────────────────────────────
 function todayKey() {
@@ -36,65 +43,230 @@ function showError(msg) {
   setTimeout(() => el.style.display = 'none', 5000);
 }
 
-// ── Storage ────────────────────────────────────────────────────────────────
-const STORE_KEY = 'nutritrack_log';
+// ── Cloud Storage ──────────────────────────────────────────────────────────
+async function getEntries(dateKey) {
+  if (!currentUser) return [];
+  if (entriesCache[dateKey]) return entriesCache[dateKey];
 
-function getLog() {
-  try { return JSON.parse(localStorage.getItem(STORE_KEY) || '{}'); } catch { return {}; }
+  try {
+    const { data, error } = await supabase
+      .from('food_logs')
+      .select('id, entry')
+      .eq('user_id', currentUser.id)
+      .eq('date', dateKey)
+      .order('created_at', { ascending: true });
+
+    if (error) throw error;
+    const entries = (data || []).map(row => ({ ...row.entry, _rowId: row.id }));
+    entriesCache[dateKey] = entries;
+    return entries;
+  } catch (err) {
+    console.error('Failed to load entries:', err);
+    return [];
+  }
 }
 
-function saveLog(log) {
-  localStorage.setItem(STORE_KEY, JSON.stringify(log));
+async function addEntry(dateKey, entry) {
+  if (!currentUser) return;
+  try {
+    const { data, error } = await supabase
+      .from('food_logs')
+      .insert({ user_id: currentUser.id, date: dateKey, entry })
+      .select('id')
+      .single();
+
+    if (error) throw error;
+    // Add to cache with the DB row id
+    if (!entriesCache[dateKey]) entriesCache[dateKey] = [];
+    entriesCache[dateKey].push({ ...entry, _rowId: data.id });
+  } catch (err) {
+    console.error('Failed to save entry:', err);
+    throw err;
+  }
 }
 
-function getEntries(dateKey) {
-  return getLog()[dateKey] || [];
+async function deleteEntry(dateKey, entryId, rowId) {
+  if (!currentUser) return;
+  try {
+    // rowId is the Supabase row UUID; entryId is the JS timestamp id inside entry json
+    const idToDelete = rowId || entryId;
+    const { error } = await supabase
+      .from('food_logs')
+      .delete()
+      .eq('id', idToDelete)
+      .eq('user_id', currentUser.id);
+
+    if (error) throw error;
+    if (entriesCache[dateKey]) {
+      entriesCache[dateKey] = entriesCache[dateKey].filter(
+        e => e._rowId !== idToDelete && e.id !== entryId
+      );
+    }
+  } catch (err) {
+    console.error('Failed to delete entry:', err);
+    throw err;
+  }
 }
 
-function addEntry(dateKey, entry) {
-  const log = getLog();
-  if (!log[dateKey]) log[dateKey] = [];
-  log[dateKey].push(entry);
-  saveLog(log);
+// ── Profile / API Key ──────────────────────────────────────────────────────
+async function getApiKey() {
+  if (!currentUser) return '';
+  try {
+    const { data } = await supabase
+      .from('profiles')
+      .select('anthropic_api_key')
+      .eq('id', currentUser.id)
+      .single();
+    return data?.anthropic_api_key || '';
+  } catch { return ''; }
 }
 
-function deleteEntry(dateKey, id) {
-  const log = getLog();
-  if (!log[dateKey]) return;
-  log[dateKey] = log[dateKey].filter(e => e.id !== id);
-  saveLog(log);
+async function setApiKey(key) {
+  if (!currentUser) return;
+  await supabase
+    .from('profiles')
+    .upsert({ id: currentUser.id, anthropic_api_key: key, updated_at: new Date().toISOString() });
 }
 
-// ── API Key ────────────────────────────────────────────────────────────────
-function getApiKey() { return localStorage.getItem('nutritrack_api_key') || ''; }
-function setApiKey(k) { localStorage.setItem('nutritrack_api_key', k); }
-
-function updateApiStatus() {
-  const key = getApiKey();
+async function updateApiStatus() {
+  const key = await getApiKey();
   const dot = document.getElementById('api-dot');
   const label = document.getElementById('api-status');
   if (key) { dot.classList.add('connected'); label.textContent = 'API connected'; }
   else { dot.classList.remove('connected'); label.textContent = 'No API key'; }
 }
 
-// ── Modal ──────────────────────────────────────────────────────────────────
-function initModal() {
-  const overlay = document.getElementById('modal-overlay');
-  const input = document.getElementById('api-key-input');
-  const btn = document.getElementById('btn-save-key');
+// ── Auth ───────────────────────────────────────────────────────────────────
+function showAuthModal() {
+  document.getElementById('auth-modal-overlay').classList.add('open');
+  document.getElementById('api-modal-overlay').classList.remove('open');
+}
 
-  if (getApiKey()) {
-    overlay.classList.remove('open');
-    return;
+function hideAuthModal() {
+  document.getElementById('auth-modal-overlay').classList.remove('open');
+}
+
+function setAuthError(msg) {
+  const el = document.getElementById('auth-error');
+  el.textContent = msg;
+  el.style.display = msg ? 'block' : 'none';
+}
+
+async function onSignedIn(user) {
+  currentUser = user;
+  hideAuthModal();
+
+  // Show user pill
+  const pill = document.getElementById('user-pill');
+  document.getElementById('user-email').textContent = user.email;
+  pill.style.display = 'flex';
+
+  await updateApiStatus();
+
+  // Check if API key is set
+  const key = await getApiKey();
+  if (!key) {
+    document.getElementById('api-modal-overlay').classList.add('open');
   }
 
-  btn.addEventListener('click', () => {
-    const key = input.value.trim();
-    if (!key.startsWith('sk-ant')) { alert('That doesn\'t look like an Anthropic key. It should start with sk-ant-'); return; }
-    setApiKey(key);
-    overlay.classList.remove('open');
-    updateApiStatus();
+  // Load today's log
+  entriesCache = {};
+  viewDate = todayKey();
+  await renderLog();
+}
+
+function onSignedOut() {
+  currentUser = null;
+  entriesCache = {};
+  document.getElementById('user-pill').style.display = 'none';
+  document.getElementById('log-entries').innerHTML = '';
+  document.getElementById('log-empty').style.display = 'block';
+  document.getElementById('totals-bar').style.display = 'none';
+  document.getElementById('result-card').style.display = 'none';
+  document.getElementById('api-dot').classList.remove('connected');
+  document.getElementById('api-status').textContent = 'No API key';
+  showAuthModal();
+}
+
+function initAuth() {
+  // Auth tab switching
+  document.querySelectorAll('.auth-tab-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+      document.querySelectorAll('.auth-tab-btn').forEach(b => b.classList.toggle('active', b === btn));
+      document.querySelectorAll('.auth-tab-panel').forEach(p => p.classList.toggle('active', p.id === 'auth-tab-' + btn.dataset.tab));
+      setAuthError('');
+    });
+  });
+
+  // Sign in
+  document.getElementById('btn-signin').addEventListener('click', async () => {
+    const email = document.getElementById('signin-email').value.trim();
+    const password = document.getElementById('signin-password').value;
+    if (!email || !password) { setAuthError('Please enter email and password.'); return; }
+
+    const btn = document.getElementById('btn-signin');
+    btn.disabled = true; btn.textContent = 'Signing in…';
+    setAuthError('');
+
+    const { error } = await supabase.auth.signInWithPassword({ email, password });
+    btn.disabled = false; btn.textContent = 'Sign In';
+    if (error) setAuthError(error.message);
+  });
+
+  // Sign up
+  document.getElementById('btn-signup').addEventListener('click', async () => {
+    const email = document.getElementById('signup-email').value.trim();
+    const password = document.getElementById('signup-password').value;
+    const confirm = document.getElementById('signup-confirm').value;
+    if (!email || !password) { setAuthError('Please enter email and password.'); return; }
+    if (password.length < 6) { setAuthError('Password must be at least 6 characters.'); return; }
+    if (password !== confirm) { setAuthError('Passwords do not match.'); return; }
+
+    const btn = document.getElementById('btn-signup');
+    btn.disabled = true; btn.textContent = 'Creating account…';
+    setAuthError('');
+
+    const { error } = await supabase.auth.signUp({ email, password });
+    btn.disabled = false; btn.textContent = 'Create Account';
+    if (error) { setAuthError(error.message); return; }
+    setAuthError('');
+    showToast('Account created! Check your email to confirm, then sign in.');
+  });
+
+  // Sign out
+  document.getElementById('btn-signout').addEventListener('click', async () => {
+    await supabase.auth.signOut();
+  });
+
+  // Listen for auth state changes
+  supabase.auth.onAuthStateChange(async (event, session) => {
+    if (session?.user) {
+      await onSignedIn(session.user);
+    } else {
+      onSignedOut();
+    }
+  });
+}
+
+// ── API Key Modal ──────────────────────────────────────────────────────────
+function initApiKeyModal() {
+  document.getElementById('btn-save-key').addEventListener('click', async () => {
+    const key = document.getElementById('api-key-input').value.trim();
+    if (!key.startsWith('sk-ant')) {
+      alert("That doesn't look like an Anthropic key. It should start with sk-ant-");
+      return;
+    }
+    await setApiKey(key);
+    document.getElementById('api-modal-overlay').classList.remove('open');
+    await updateApiStatus();
     showToast('API key saved ✓');
+  });
+
+  // Re-open API key modal when clicking the status dot
+  document.querySelector('.status-dot').addEventListener('click', () => {
+    if (!currentUser) return;
+    document.getElementById('api-key-input').value = '';
+    document.getElementById('api-modal-overlay').classList.add('open');
   });
 }
 
@@ -141,9 +313,12 @@ function initImageUpload() {
 
 // ── Analyze ────────────────────────────────────────────────────────────────
 async function analyzeFood() {
-  const apiKey = getApiKey();
+  if (!currentUser) { showAuthModal(); return; }
+
+  const apiKey = await getApiKey();
   if (!apiKey) {
-    document.getElementById('modal-overlay').classList.add('open');
+    document.getElementById('api-key-input').value = '';
+    document.getElementById('api-modal-overlay').classList.add('open');
     return;
   }
 
@@ -153,7 +328,6 @@ async function analyzeFood() {
   const errEl = document.getElementById('error-msg');
   errEl.style.display = 'none';
 
-  // Build payload
   let payload;
   if (activeTab === 'text') {
     const desc = document.getElementById('food-input').value.trim();
@@ -178,11 +352,9 @@ async function analyzeFood() {
     const json = await res.json();
     if (!res.ok) throw new Error(json.error || `API error ${res.status}`);
 
-    // Extract the text from Claude's response
     const text = json.content?.[0]?.text;
     if (!text) throw new Error('Empty response from Claude');
 
-    // Strip markdown code fences if Claude wrapped the JSON anyway
     const cleaned = text.replace(/^```(?:json)?\s*/i, '').replace(/\s*```\s*$/, '').trim();
     const data = JSON.parse(cleaned);
     lastResult = data;
@@ -214,7 +386,6 @@ function renderResult(d) {
   document.getElementById('r-trans').textContent = g(d.fat?.trans);
   document.getElementById('r-sodium').textContent = mg(d.sodium);
 
-  // Vitamins
   const vitSec = document.getElementById('vitamins-section');
   const vitList = document.getElementById('r-vitamins');
   if (d.vitamins?.length) {
@@ -234,40 +405,59 @@ function renderResult(d) {
 
 // ── Add to Log ─────────────────────────────────────────────────────────────
 function initAddToLog() {
-  document.getElementById('btn-add-log').addEventListener('click', () => {
+  document.getElementById('btn-add-log').addEventListener('click', async () => {
     if (!lastResult) return;
+    if (!currentUser) { showAuthModal(); return; }
+
     const entry = {
       id: Date.now().toString(),
       time: new Date().toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' }),
       ...lastResult,
     };
-    addEntry(todayKey(), entry);
-    viewDate = todayKey();
-    renderLog();
-    showToast('Added to today\'s log ✓');
-    document.querySelector('.card:last-child').scrollIntoView({ behavior: 'smooth' });
+
+    const btn = document.getElementById('btn-add-log');
+    btn.disabled = true;
+    btn.textContent = 'Saving…';
+
+    try {
+      await addEntry(todayKey(), entry);
+      viewDate = todayKey();
+      await renderLog();
+      showToast('Added to today\'s log ✓');
+      document.querySelector('.card:last-child').scrollIntoView({ behavior: 'smooth' });
+    } catch (err) {
+      showToast('Failed to save — please try again');
+    } finally {
+      btn.disabled = false;
+      btn.textContent = '+ Add to Today\'s Log';
+    }
   });
 }
 
 // ── Log Rendering ──────────────────────────────────────────────────────────
-function renderLog() {
+async function renderLog() {
   document.getElementById('log-date-label').textContent = formatDate(viewDate);
 
-  const entries = getEntries(viewDate);
-  const empty = document.getElementById('log-empty');
-  const list = document.getElementById('log-entries');
-  const totals = document.getElementById('totals-bar');
+  const loadingEl = document.getElementById('log-loading');
+  const emptyEl = document.getElementById('log-empty');
+  const listEl = document.getElementById('log-entries');
+  const totalsEl = document.getElementById('totals-bar');
 
-  list.innerHTML = '';
+  loadingEl.style.display = 'flex';
+  emptyEl.style.display = 'none';
+  listEl.innerHTML = '';
+  totalsEl.style.display = 'none';
+
+  const entries = await getEntries(viewDate);
+
+  loadingEl.style.display = 'none';
 
   if (!entries.length) {
-    empty.style.display = 'block';
-    totals.style.display = 'none';
+    emptyEl.style.display = 'block';
     return;
   }
 
-  empty.style.display = 'none';
-  totals.style.display = 'grid';
+  totalsEl.style.display = 'grid';
 
   let totCal = 0, totCarbs = 0, totProt = 0, totFat = 0;
 
@@ -280,13 +470,14 @@ function renderLog() {
     const div = document.createElement('div');
     div.className = 'log-entry';
     div.dataset.id = e.id;
+    div.dataset.rowId = e._rowId || '';
 
     div.innerHTML = `
       <div class="log-entry-header">
         <span class="entry-time">${e.time}</span>
         <span class="entry-name">${e.foodName}</span>
         <span class="entry-cal">${e.calories} kcal</span>
-        <button class="entry-delete" data-id="${e.id}" title="Remove">✕</button>
+        <button class="entry-delete" data-id="${e.id}" data-row-id="${e._rowId || ''}" title="Remove">✕</button>
         <span class="entry-expand">▾</span>
       </div>
       <div class="log-entry-detail">
@@ -305,20 +496,26 @@ function renderLog() {
       </div>
     `;
 
-    // Toggle expand
     div.querySelector('.log-entry-header').addEventListener('click', ev => {
       if (ev.target.classList.contains('entry-delete')) return;
       div.classList.toggle('open');
     });
 
-    // Delete
-    div.querySelector('.entry-delete').addEventListener('click', ev => {
+    div.querySelector('.entry-delete').addEventListener('click', async ev => {
       ev.stopPropagation();
-      deleteEntry(viewDate, e.id);
-      renderLog();
+      const entryId = ev.currentTarget.dataset.id;
+      const rowId = ev.currentTarget.dataset.rowId;
+      div.style.opacity = '0.5';
+      try {
+        await deleteEntry(viewDate, entryId, rowId);
+        await renderLog();
+      } catch {
+        div.style.opacity = '1';
+        showToast('Failed to delete — please try again');
+      }
     });
 
-    list.appendChild(div);
+    listEl.appendChild(div);
   });
 
   document.getElementById('t-cal').textContent = Math.round(totCal);
@@ -331,37 +528,42 @@ function renderLog() {
 function shiftDate(n) {
   const d = new Date(viewDate + 'T12:00:00');
   d.setDate(d.getDate() + n);
-  viewDate = d.toISOString().slice(0, 10);
-  renderLog();
+  const newKey = d.toISOString().slice(0, 10);
+  if (newKey !== viewDate) {
+    viewDate = newKey;
+    renderLog();
+  }
 }
 
 function initDateNav() {
   document.getElementById('btn-prev').addEventListener('click', () => shiftDate(-1));
   document.getElementById('btn-next').addEventListener('click', () => shiftDate(1));
-  document.getElementById('btn-today').addEventListener('click', () => { viewDate = todayKey(); renderLog(); });
+  document.getElementById('btn-today').addEventListener('click', () => {
+    if (viewDate !== todayKey()) { viewDate = todayKey(); renderLog(); }
+  });
 }
 
 // ── Init ───────────────────────────────────────────────────────────────────
-function init() {
-  initModal();
+async function init() {
+  initAuth();
+  initApiKeyModal();
   initTabs();
   initImageUpload();
-  updateApiStatus();
   initAddToLog();
   initDateNav();
-  renderLog();
+
+  // Check for existing session (persists across refreshes)
+  const { data: { session } } = await supabase.auth.getSession();
+  if (!session) {
+    // No session — show auth modal (already open by default)
+    renderLog(); // renders empty state
+  }
+  // If session exists, onAuthStateChange will fire and call onSignedIn
 
   document.getElementById('btn-analyze').addEventListener('click', analyzeFood);
 
-  // Allow Enter in textarea to not submit (Shift+Enter = newline is default)
   document.getElementById('food-input').addEventListener('keydown', e => {
     if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); analyzeFood(); }
-  });
-
-  // Re-check API key when clicking the status dot area
-  document.querySelector('.status-dot').addEventListener('click', () => {
-    document.getElementById('modal-overlay').classList.add('open');
-    document.getElementById('api-key-input').value = '';
   });
 }
 

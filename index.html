@@ -15,6 +15,9 @@
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
   <meta name="apple-mobile-web-app-title" content="NutriTrack" />
   <link rel="apple-touch-icon" href="/icons/icon-192.png" />
+
+  <!-- Supabase -->
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
 </head>
 <body>
 
@@ -23,9 +26,15 @@
     <span class="logo-icon">🥗</span>
     <span>NutriTrack</span>
   </div>
-  <div class="status-dot">
-    <div class="dot" id="api-dot"></div>
-    <span id="api-status">No API key</span>
+  <div class="header-right">
+    <div class="status-dot">
+      <div class="dot" id="api-dot"></div>
+      <span id="api-status">No API key</span>
+    </div>
+    <div class="user-pill" id="user-pill">
+      <span class="user-email" id="user-email"></span>
+      <button class="btn-signout" id="btn-signout">Sign out</button>
+    </div>
   </div>
 </header>
 
@@ -87,8 +96,8 @@
         <div class="value" id="r-fat"></div>
         <div class="unit">grams</div>
       </div>
-      <div class="macro-box">
-        <div class="label">Fiber</div>
+      <div class="macro-box fiber-box">
+        <div class="label">🌾 Fiber</div>
         <div class="value" id="r-fiber-macro"></div>
         <div class="unit">grams</div>
       </div>
@@ -124,6 +133,10 @@
       </div>
     </div>
 
+    <div id="log-loading" class="log-loading" style="display:none">
+      <div class="log-spinner"></div>
+    </div>
+
     <div id="log-empty" class="empty-state">
       <div class="icon">🌱</div>
       <p>No food logged yet today</p>
@@ -152,12 +165,41 @@
   </div>
 </main>
 
+<!-- Auth Modal -->
+<div class="modal-overlay open" id="auth-modal-overlay">
+  <div class="modal">
+    <div class="modal-logo">🥗 NutriTrack</div>
+
+    <div class="auth-tabs">
+      <button class="auth-tab-btn active" data-tab="signin">Sign In</button>
+      <button class="auth-tab-btn" data-tab="signup">Sign Up</button>
+    </div>
+
+    <!-- Sign In -->
+    <div class="auth-tab-panel active" id="auth-tab-signin">
+      <input type="email" id="signin-email" placeholder="Email address" autocomplete="email" />
+      <input type="password" id="signin-password" placeholder="Password" autocomplete="current-password" />
+      <button class="btn-primary" id="btn-signin">Sign In</button>
+    </div>
+
+    <!-- Sign Up -->
+    <div class="auth-tab-panel" id="auth-tab-signup">
+      <input type="email" id="signup-email" placeholder="Email address" autocomplete="email" />
+      <input type="password" id="signup-password" placeholder="Password (min 6 characters)" autocomplete="new-password" />
+      <input type="password" id="signup-confirm" placeholder="Confirm password" autocomplete="new-password" />
+      <button class="btn-primary" id="btn-signup">Create Account</button>
+    </div>
+
+    <div id="auth-error" class="auth-error"></div>
+  </div>
+</div>
+
 <!-- API Key Modal -->
-<div class="modal-overlay open" id="modal-overlay">
+<div class="modal-overlay" id="api-modal-overlay">
   <div class="modal">
     <h2>🔑 Set Your API Key</h2>
-    <p>NutriTrack uses the Anthropic Claude API to analyze food. Your key is stored only in your browser's localStorage and never shared.</p>
-    <input type="password" id="api-key-input" placeholder="sk-ant-api03-..." />
+    <p>NutriTrack uses the Anthropic Claude API to analyze food. Your key is stored securely in your account.</p>
+    <input type="password" id="api-key-input" placeholder="sk-ant-api03-..." autocomplete="off" />
     <button class="btn-primary" id="btn-save-key">Save & Continue</button>
   </div>
 </div>

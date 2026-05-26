@@ -223,10 +223,18 @@ function initAuth() {
     btn.disabled = true; btn.textContent = 'Creating account…';
     setAuthError('');
 
-    const { error } = await supabase.auth.signUp({ email, password });
+    const { data, error } = await supabase.auth.signUp({ email, password });
     btn.disabled = false; btn.textContent = 'Create Account';
     if (error) { setAuthError(error.message); return; }
-    showToast('Account created! Check your email to confirm, then sign in.');
+
+    // If email confirmation is required, session will be null
+    if (!data.session) {
+      setAuthError('✅ Account created! Check your email for a confirmation link, then come back and Sign In.');
+      document.getElementById('auth-error').style.background = '#dcfce7';
+      document.getElementById('auth-error').style.color = '#166534';
+      return;
+    }
+    // If email confirmation is disabled, session is returned immediately — onAuthStateChange handles it
   });
 
   // Sign out

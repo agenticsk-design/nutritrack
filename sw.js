@@ -1,6 +1,6 @@
-/* NutriTrack Service Worker */
-const CACHE = 'nutritrack-v3';
-const STATIC = ['/', '/index.html', '/style.css', '/app.js', '/manifest.json'];
+/* NutriTrack Service Worker - network-first for HTML, cache-first for assets */
+const CACHE = 'nutritrack-v4';
+const STATIC = ['/style.css', '/app.js', '/manifest.json'];
 
 self.addEventListener('install', e => {
   e.waitUntil(caches.open(CACHE).then(c => c.addAll(STATIC)));
@@ -15,12 +15,23 @@ self.addEventListener('activate', e => {
 });
 
 self.addEventListener('fetch', e => {
+  const url = e.request.url;
+
   // Never cache API calls
-  if (e.request.url.includes('/api/') || e.request.url.includes('/.netlify/')) {
+  if (url.includes('/api/') || url.includes('/.netlify/')) {
     e.respondWith(fetch(e.request));
     return;
   }
-  // Cache-first for static assets
+
+  // Network-first for HTML (always get fresh markup)
+  if (e.request.mode === 'navigate' || url.endsWith('.html') || url.endsWith('/')) {
+    e.respondWith(
+      fetch(e.request).catch(() => caches.match('/index.html'))
+    );
+    return;
+  }
+
+  // Cache-first for other static assets (CSS, JS, images)
   e.respondWith(
     caches.match(e.request).then(cached => cached || fetch(e.request).then(res => {
       const clone = res.clone();

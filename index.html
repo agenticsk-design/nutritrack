@@ -4,7 +4,7 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>NutriTrack</title>
-  <link rel="stylesheet" href="style.css?v=5" />
+  <link rel="stylesheet" href="style.css?v=6" />
 
   <!-- PWA -->
   <link rel="manifest" href="/manifest.json" />
@@ -38,17 +38,34 @@
 
       <!-- Sign In -->
       <div class="auth-tab-panel" id="auth-tab-signin">
-        <input type="email" id="signin-email" placeholder="Email address" autocomplete="email" />
-        <input type="password" id="signin-password" placeholder="Password" autocomplete="current-password" />
-        <button class="btn-primary" id="btn-signin">Sign In</button>
+        <div class="auth-field">
+          <span class="auth-field-icon">✉️</span>
+          <input type="email" id="signin-email" placeholder="Email address" autocomplete="email" />
+        </div>
+        <div class="auth-field">
+          <span class="auth-field-icon">🔒</span>
+          <input type="password" id="signin-password" placeholder="Password" autocomplete="current-password" />
+        </div>
+        <button class="btn-primary" id="btn-signin">Sign In →</button>
+        <p class="auth-divider">Your data is stored privately in your account</p>
       </div>
 
       <!-- Sign Up -->
       <div class="auth-tab-panel active" id="auth-tab-signup">
-        <input type="email" id="signup-email" placeholder="Email address" autocomplete="email" />
-        <input type="password" id="signup-password" placeholder="Password (min 6 characters)" autocomplete="new-password" />
-        <input type="password" id="signup-confirm" placeholder="Confirm password" autocomplete="new-password" />
-        <button class="btn-primary" id="btn-signup">Create Account</button>
+        <div class="auth-field">
+          <span class="auth-field-icon">✉️</span>
+          <input type="email" id="signup-email" placeholder="Email address" autocomplete="email" />
+        </div>
+        <div class="auth-field">
+          <span class="auth-field-icon">🔒</span>
+          <input type="password" id="signup-password" placeholder="Password (min 6 characters)" autocomplete="new-password" />
+        </div>
+        <div class="auth-field">
+          <span class="auth-field-icon">✅</span>
+          <input type="password" id="signup-confirm" placeholder="Confirm password" autocomplete="new-password" />
+        </div>
+        <button class="btn-primary" id="btn-signup">Create Account →</button>
+        <p class="auth-divider">Free to use · No credit card required</p>
       </div>
 
       <div id="auth-error" class="auth-error"></div>

@@ -7,7 +7,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
-  <link rel="stylesheet" href="style.css?v=7" />
+  <link rel="stylesheet" href="style.css?v=8" />
 
   <!-- PWA -->
   <link rel="manifest" href="/manifest.json" />
@@ -27,37 +27,34 @@
 <!-- ── Auth Screen ─────────────────────────────────────────────────────── -->
 <div id="auth-screen">
 
-  <!-- Left: brand hero -->
-  <div class="auth-hero">
-    <span class="auth-hero-icon">🥗</span>
-    <h1 class="auth-hero-title">Your personal nutrition companion</h1>
-    <p class="auth-hero-subtitle">Describe a meal or snap a photo — AI breaks down every calorie, macro, and micronutrient instantly.</p>
-    <div class="auth-hero-features">
-      <div class="auth-hero-feature">
-        <div class="auth-hero-feature-dot"></div>
-        AI-powered food analysis with Claude
-      </div>
-      <div class="auth-hero-feature">
-        <div class="auth-hero-feature-dot"></div>
-        Full macro &amp; micronutrient breakdown
-      </div>
-      <div class="auth-hero-feature">
-        <div class="auth-hero-feature-dot"></div>
-        Daily log synced to your account
-      </div>
-      <div class="auth-hero-feature">
-        <div class="auth-hero-feature-dot"></div>
-        Private &amp; secure — your data stays yours
-      </div>
+  <!-- Background glow -->
+  <div class="auth-bg-glow"></div>
+
+  <!-- Top nav -->
+  <nav class="auth-nav">
+    <div class="auth-nav-logo">
+      <span>🥗</span>
+      NutriTrack
     </div>
-  </div>
+  </nav>
 
-  <!-- Right: form -->
-  <div class="auth-form-panel">
-    <div class="auth-form-inner">
-      <p class="auth-form-heading">Get started</p>
-      <p class="auth-form-sub">Sign in to your account or create a new one.</p>
+  <!-- Center content -->
+  <div class="auth-center">
 
+    <!-- Hero copy -->
+    <div class="auth-eyebrow">Powered by Claude AI</div>
+    <h1 class="auth-headline">Know exactly<br>what you eat.</h1>
+    <p class="auth-subheadline">Describe a meal or snap a photo. Get instant calories,<br>macros, and micronutrients — logged to your account.</p>
+
+    <!-- Feature chips -->
+    <div class="auth-chips">
+      <span class="auth-chip">⚡ Instant analysis</span>
+      <span class="auth-chip">📊 Full macro breakdown</span>
+      <span class="auth-chip">🔒 Private by default</span>
+    </div>
+
+    <!-- Form card -->
+    <div class="auth-card">
       <div class="auth-tabs">
         <button class="auth-tab-btn" data-tab="signin">Sign In</button>
         <button class="auth-tab-btn active" data-tab="signup">Create Account</button>
@@ -66,12 +63,12 @@
       <!-- Sign In -->
       <div class="auth-tab-panel" id="auth-tab-signin">
         <div class="auth-field">
-          <label for="signin-email">Email address</label>
+          <label for="signin-email">Email</label>
           <input type="email" id="signin-email" placeholder="you@example.com" autocomplete="email" />
         </div>
         <div class="auth-field">
           <label for="signin-password">Password</label>
-          <input type="password" id="signin-password" placeholder="Your password" autocomplete="current-password" />
+          <input type="password" id="signin-password" placeholder="••••••••" autocomplete="current-password" />
         </div>
         <button class="auth-submit" id="btn-signin">Sign In</button>
       </div>
@@ -79,7 +76,7 @@
       <!-- Sign Up -->
       <div class="auth-tab-panel active" id="auth-tab-signup">
         <div class="auth-field">
-          <label for="signup-email">Email address</label>
+          <label for="signup-email">Email</label>
           <input type="email" id="signup-email" placeholder="you@example.com" autocomplete="email" />
         </div>
         <div class="auth-field">
@@ -88,14 +85,15 @@
         </div>
         <div class="auth-field">
           <label for="signup-confirm">Confirm password</label>
-          <input type="password" id="signup-confirm" placeholder="Re-enter your password" autocomplete="new-password" />
+          <input type="password" id="signup-confirm" placeholder="••••••••" autocomplete="new-password" />
         </div>
-        <button class="auth-submit" id="btn-signup">Create Account</button>
-        <p class="auth-footer-note">Free to use · No credit card required</p>
+        <button class="auth-submit" id="btn-signup">Create free account</button>
+        <p class="auth-legal">No credit card required. Free to use.</p>
       </div>
 
       <div id="auth-error" class="auth-error"></div>
     </div>
+
   </div>
 
 </div>

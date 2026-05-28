@@ -39,7 +39,7 @@ function serveStatic(res, filePath) {
   const ext = path.extname(filePath);
   const mime = MIME[ext] || 'text/plain';
   if (fs.existsSync(filePath)) {
-    res.writeHead(200, { 'Content-Type': mime });
+    res.writeHead(200, { 'Content-Type': mime, 'Cache-Control': 'no-store' });
     fs.createReadStream(filePath).pipe(res);
   } else {
     res.writeHead(404);

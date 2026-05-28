@@ -187,10 +187,17 @@ function onSignedOut() {
 
 function initAuth() {
   // Auth tab switching
+  const headings = { signin: 'Welcome back', signup: 'Get started' };
+  const subs     = { signin: 'Sign in to continue to NutriTrack.', signup: 'Sign in to your account or create a new one.' };
   document.querySelectorAll('.auth-tab-btn').forEach(btn => {
     btn.addEventListener('click', () => {
       document.querySelectorAll('.auth-tab-btn').forEach(b => b.classList.toggle('active', b === btn));
       document.querySelectorAll('.auth-tab-panel').forEach(p => p.classList.toggle('active', p.id === 'auth-tab-' + btn.dataset.tab));
+      const t = btn.dataset.tab;
+      const h = document.querySelector('.auth-form-heading');
+      const s = document.querySelector('.auth-form-sub');
+      if (h) h.textContent = headings[t] || headings.signup;
+      if (s) s.textContent = subs[t] || subs.signup;
       setAuthError('');
     });
   });
